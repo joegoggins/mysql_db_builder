@@ -59,6 +59,13 @@ EOS
     end
     r
   end
+  
+  def output(msg,options={})
+    puts "#{msg}"
+  end
+  def self.output(msg,options={})
+    puts "#{msg}"
+  end
 
 
   module MustOverride
@@ -97,9 +104,9 @@ EXCEPTION:
         when :return
           return error_string
         when :puts
-          puts error_string
+          self.output error_string
         when :puts_and_exit
-          puts error_string
+          self.output error_string
           exit
         end
       end        
@@ -118,7 +125,7 @@ EXCEPTION:
       raise "Only know how to do stuff with symbols, strings, or "
     end
     if @verbose_mode
-      puts "[#{self.class.to_s}][Q=#{the_query.name}]
+      self.output "[#{self.class.to_s}][Q=#{the_query.name}]
 #{the_query.query}      
       " 
     end
@@ -140,7 +147,7 @@ EXCEPTION:
     if ENV['DRY_RUN'].blank?
       the_query_result = the_query.execute(self)
     else
-      puts "[#{self.class.to_s}] Dry Run"
+      self.output "[#{self.class.to_s}] Dry Run"
       the_query_result = "N/A Dry Run"      
     end
     
@@ -173,7 +180,7 @@ EXCEPTION:
   
   def render_debug_output_string(the_query,output_strings)
     output_strings.each do |s|
-      puts "[#{self.class.to_s}][Q=#{the_query.name}] #{s}"
+      self.output "[#{self.class.to_s}][Q=#{the_query.name}] #{s}"
     end
   end
   
@@ -191,14 +198,14 @@ EXCEPTION:
   def self.execute_and_output(class_name)
     table_builder = class_eval("#{class_name}.new")
     t1 = Time.now
-    puts "[#{class_name}] Started\n"
+    self.output "[#{class_name}] Started\n"
     result = table_builder.execute
     t2 = Time.now
-    puts "[#{class_name}] Finished in #{distance_of_time_in_words(t1,t2)}\n"
+    self.output "[#{class_name}] Finished in #{distance_of_time_in_words(t1,t2)}\n"
     if result.kind_of? String and result.match /ERROR/i
-      puts "[#{class_name}] FAILED\n #{result}"      
+      self.output "[#{class_name}] FAILED\n #{result}"      
     else
-      puts "[#{class_name}] SUCCESS\n"
+      self.output "[#{class_name}] SUCCESS\n"
     end
   end
 end
