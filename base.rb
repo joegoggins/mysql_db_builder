@@ -3,6 +3,7 @@ class DbBuilder::Base
   
   attr_reader :queries, 
               :target_db, 
+              :source_db,
               :target_model,
               :debug_mode, # Inspects all kinds of stuff in the queries before and after
               :verbose_mode
@@ -13,6 +14,7 @@ class DbBuilder::Base
     @debug_mode = true
     @verbose_mode = true # spits out all interpolated queries before executing them
     set_target_db
+    set_source_db
     set_target_model
     set_queries
     inject_query_callbacks 
@@ -69,7 +71,10 @@ EOS
 
 
   module MustOverride
-    protected 
+    protected
+    def set_source_db
+      raise "The child class must override the 'set_source_db' instance method."
+    end
     def set_target_db
       raise "The child class must override the 'set_target_db' instance method."
     end
