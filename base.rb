@@ -4,9 +4,9 @@ class DbBuilder::Base
   attr_reader :queries, 
               :target_db, 
               :source_db,
-              :target_model,
               :debug_mode, # Inspects all kinds of stuff in the queries before and after
-              :verbose_mode
+              :verbose_mode,
+              :target_table
   
   def initialize
     @on_exception = :raise # other options :return, :puts, :puts_and_exit
@@ -15,7 +15,7 @@ class DbBuilder::Base
     @verbose_mode = true # spits out all interpolated queries before executing them
     set_target_db
     set_source_db
-    set_target_model
+    set_target_table
     set_queries
     inject_query_callbacks 
   end
@@ -70,7 +70,7 @@ EOS
   end
 
 
-  module MustOverride
+  module Overridable
     protected
     def set_source_db
       raise "The child class must override the 'set_source_db' instance method."
@@ -83,11 +83,11 @@ EOS
       raise "The child class must override the 'set_queries' instance method."
     end
     
-    def set_target_model
-      raise "The child class must override the 'set_target_model' instance method."
+    def set_target_table
+      # Override if you want before and after counts stats on the tables
     end    
   end
-  include MustOverride
+  include Overridable
   
   def execute
     self.queries.each_with_index do |q,i|
@@ -138,13 +138,13 @@ EXCEPTION:
     # BEFORE
     if @debug_mode && (ENV['DRY_RUN'].blank?)
       output_strings = []
-      if self.target_model.nil?
-         output_strings << "@target_model not set, no stats available"
+      if self.target_table.nil?
+         output_strings << "@target_table not set, no before stats available"
       else
-        if self.target_model.table_exists?
+        if self.target_table_exists?
           output_strings << "Before Count: #{count_on_target}"
         else
-          output_strings << "Does Not Exist: #{self.target_model.table_name}"
+          output_strings << "Does Not Exist: #{self.target_table}"
         end
       end
       render_debug_output_string(the_query,output_strings)
@@ -159,13 +159,13 @@ EXCEPTION:
     # AFTER
     if @debug_mode && (ENV['DRY_RUN'].blank?)
       output_strings = []
-      if self.target_model.nil?
-         output_strings << "@target_model not set, no stats available"
+      if self.target_table.nil?
+         output_strings << "@target_table not set, no after stats available"
       else
-        if self.target_model.table_exists?
+        if self.target_table_exists?
           output_strings << "After Count: #{count_on_target}"
         else
-          output_strings << "Does Not Exist: #{self.target_model.table_name}"
+          output_strings << "Does Not Exist: #{self.target_table}"
         end      
       end
       case the_query.query_method
@@ -189,8 +189,17 @@ EXCEPTION:
     end
   end
   
+  # returns a hash if exists, which is true, returns nil otherwise...
+  # NOTE: if you don't have mysql permissions it won't work (but in this
+  # case you probably have bigger issues)
+  def target_table_exists?
+    ActiveRecord::Base.connection.select_one("select * from information_schema.tables where 
+                                              table_name='#{self.target_table}' 
+                                              and table_schema='#{self.target_db}'")
+  end
+
   def count_on_target
-    ActiveRecord::Base.connection.select_value("SELECT count(*) FROM #{self.target_db}.#{self.target_model.table_name}")
+    ActiveRecord::Base.connection.select_value("SELECT count(*) FROM #{self.target_db}.#{self.target_table}")
   end
   
   def affected_rows
