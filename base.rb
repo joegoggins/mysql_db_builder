@@ -13,28 +13,40 @@ class DbBuilder::Base
   end
  
   def target_db
-    set_target_db
+    unless @set_target_db
+      set_target_db
+      @set_target_db = true
+    end
     @target_db
   end 
 
   def source_db
-    set_source_db
+    unless @set_source_db
+      set_source_db
+      @set_source_db = true
+    end
     @source_db
   end
 
   def queries
-    set_queries
+    unless @set_queries
+      set_queries
+      @set_queries = true
+    end
     @queries
   end
 
   def target_table
-    set_target_table
+    unless @set_target_table
+      set_target_table
+      @set_target_table = true
+    end
     @target_table
   end
 
   def to_s
     r = ''
-    @queries.each_with_index do |q,i|
+    self.queries.each_with_index do |q,i|
       r << <<-EOS
 ==========================================================================
 Q#{i} #{q.to_s(:long)}
@@ -105,7 +117,7 @@ EXCEPTION:
   # or an instance of the query
   def execute_query(q_or_q_name_sym)
     if q_or_q_name_sym.kind_of?(Symbol) || q_or_q_name_sym.kind_of?(String)
-      the_query = @queries.find {|x| x.name == q_or_q_name_sym.to_sym}
+      the_query = self.queries.find {|x| x.name == q_or_q_name_sym.to_sym}
     elsif q_or_q_name_sym.kind_of?(DbBuilder::AbstractQ)
       the_query = q_or_q_name_sym
     else
