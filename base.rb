@@ -1,10 +1,7 @@
 class DbBuilder::Base
   attr_accessor :on_exception # other options :return, :puts, :puts_and_exit
   
-  attr_reader :queries, 
-              :target_db, 
-              :source_db,
-              :debug_mode, # Inspects all kinds of stuff in the queries before and after
+  attr_reader :debug_mode, # Inspects all kinds of stuff in the queries before and after
               :verbose_mode,
               :target_table
   
@@ -13,43 +10,28 @@ class DbBuilder::Base
     @queries = []
     @debug_mode = true
     @verbose_mode = true # spits out all interpolated queries before executing them
+  end
+ 
+  def target_db
     set_target_db
-    set_source_db
-    set_target_table
-    set_queries
-    inject_query_callbacks 
-  end
-  
-  @@query_callbacks = []
-  def self.before(reference_q, worker_q)
-    @@query_callbacks << DbBuilder::QueryCallback.new(:before, reference_q, worker_q)
-  end
-  def self.after(reference_q, worker_q)
-    @@query_callbacks << DbBuilder::QueryCallback.new(:after, reference_q, worker_q)
-  end
-  
-  def inject_query_callbacks
-    @@query_callbacks.each do |q_callback|
-      case q_callback.type
-      when :before
-        if q_callback.reference_q == :first
-          @queries.insert(0, q_callback.worker_q)
-        elsif q_callback.reference_q == :last
-          @queries.insert(@queries.length - 1, q_callback.worker_q)
-        end
-      when :after
-        if q_callback.reference_q == :first
-          @queries.insert(1, q_callback.worker_q)
-        elsif q_callback.reference_q == :last
-          @queries.insert(@queries.length, q_callback.worker_q)
-        end
-      else
-        raise 'Invalid q_callback.type'
-      end
-    end
+    @target_db
   end 
-  # Interpolates all strings into queries
-  # 
+
+  def source_db
+    set_source_db
+    @source_db
+  end
+
+  def queries
+    set_queries
+    @queries
+  end
+
+  def target_table
+    set_target_table
+    @target_table
+  end
+
   def to_s
     r = ''
     @queries.each_with_index do |q,i|
